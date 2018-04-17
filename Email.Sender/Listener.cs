@@ -1,4 +1,4 @@
-﻿using Email.Shared;
+using Email.Shared;
 using Email.Shared.DTO;
 using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
@@ -74,10 +74,18 @@ namespace Email.Sender
 				if (!await Repository.EmailSent(message.Id))
 				{
 					success = await EmailSender.Send(message);
-					await Repository.UpdateTrailStatus(message.Id, success); 
 				}
 
-				_channel.BasicAck(ea.DeliveryTag, false);
+				if (success)
+				{
+					_channel.BasicAck(ea.DeliveryTag, false);
+					await Repository.UpdateTrailStatus(message.Id, success); 
+				}
+				else
+				{
+					// status already set to FailedToSend
+					_channel.BasicNack(ea.DeliveryTag, false, true);
+				}
 			}
 			catch (Exception ex)
 			{

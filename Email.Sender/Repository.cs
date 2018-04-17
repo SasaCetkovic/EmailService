@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Email.Shared.Data;
 using Email.Shared.Data.Entities;
 using Email.Shared.Data.Enums;
@@ -33,6 +33,16 @@ namespace Email.Sender
 			using (var dbContext = CreateDbContext())
 			{
 				var trail = await dbContext.Emails.FindAsync(trailId);
+
+				if (trail.Status == EmailStatus.FailedToSend && success)
+				{
+					var failed = await dbContext.Failed.FindAsync(trailId);
+					if (failed != null)
+					{
+						dbContext.Remove(failed); 
+					}
+				}
+
 				trail.Status = success ? EmailStatus.Sent : EmailStatus.FailedToSend;
 				trail.UpdatedDateTime = DateTime.UtcNow;
 				await dbContext.SaveChangesAsync();
@@ -44,19 +54,25 @@ namespace Email.Sender
 		{
 			using (var dbContext = CreateDbContext())
 			{
-				var message = new Failed
-				{
-					Id = dto.Id,
-					Receiver = dto.Receiver,
-					Sender = dto.Sender,
-					Subject = dto.Subject,
-					Body = dto.Body,
-					CreatedDateTime = DateTime.UtcNow,
-					Error = ex?.ToString()
-				};
+				var trail = await dbContext.Emails.FindAsync(dto.Id);
 
-				await dbContext.AddAsync(message);
-				await dbContext.SaveChangesAsync();
+				if (trail.Status != EmailStatus.FailedToSend)
+				{
+					var message = new Failed
+					{
+						Id = dto.Id,
+						Receiver = dto.Receiver,
+						Sender = dto.Sender,
+						Subject = dto.Subject,
+						Body = dto.Body,
+						CreatedDateTime = DateTime.UtcNow,
+						Error = ex?.ToString()
+					};
+
+					await dbContext.AddAsync(message);
+					trail.Status = EmailStatus.FailedToSend;
+					await dbContext.SaveChangesAsync();
+				}
 			}
 		}
 
