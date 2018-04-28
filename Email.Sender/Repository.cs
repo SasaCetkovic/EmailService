@@ -5,6 +5,7 @@ using Email.Shared.Data.Enums;
 using Email.Shared.DTO;
 using System;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Email.Sender
 {
@@ -77,12 +78,32 @@ namespace Email.Sender
 		}
 
 
-		internal static async Task<bool> EmailSent(long trailId)
+		internal static async Task<bool> EmailSentAsync(long trailId)
 		{
 			using (var dbContext = CreateDbContext())
 			{
 				var trail = await dbContext.Emails.FindAsync(trailId);
 				return trail.Status == EmailStatus.Sent;
+			}
+		}
+
+
+		internal static bool EmailSent(long trailId)
+		{
+			using (var dbContext = CreateDbContext())
+			{
+				var trail = dbContext.Emails.Find(trailId);
+				return trail.Status == EmailStatus.Sent;
+			}
+		}
+
+
+		internal static Failed[] GetFailed()
+		{
+			using (var dbContext = CreateDbContext())
+			{
+				var failed = dbContext.Failed.Where(f => f.Trail.Status == EmailStatus.FailedToSend).Include(f => f.Trail).ToArray();
+				return failed;
 			}
 		}
 	}

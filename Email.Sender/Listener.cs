@@ -49,6 +49,32 @@ namespace Email.Sender
 		}
 
 
+		public static void TryResendFailed()
+		{
+			var failed = Repository.GetFailed();
+			foreach (var f in failed)
+			{
+				if (!Repository.EmailSent(f.Id))
+				{
+					var dto = new EmailDto { Id = f.Id, Body = f.Body, Receiver = f.Receiver, Sender = f.Sender, Subject = f.Subject };
+
+					try
+					{
+						var success = EmailSender.SendAsync(dto).Result;
+						if (success)
+						{
+							Repository.UpdateTrailStatus(dto.Id, success).Wait();
+						}
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine(ex);
+					}
+				}
+			}
+		}
+
+
 		private static void Connect()
 		{
 			_connectionFactory = new ConnectionFactory() { HostName = _rmqConfig.HostName, UserName = _rmqConfig.Username, Password = _rmqConfig.Password };
@@ -71,7 +97,7 @@ namespace Email.Sender
 			{
 				var message = DeserialiseFromBinary<EmailDto>(ea.Body);
 
-				if (!await Repository.EmailSent(message.Id))
+				if (!await Repository.EmailSentAsync(message.Id))
 				{
 					success = await EmailSender.Send(message);
 				}

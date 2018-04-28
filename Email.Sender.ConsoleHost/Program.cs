@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Email.Shared;
 using System;
 using System.Threading;
@@ -13,6 +13,13 @@ namespace Email.Sender.ConsoleHost
             Console.WriteLine("Loading...");
 
 			Listener.Start();
+
+			// use this argument in case of queue faillure
+			if (args != null && args.Length > 0 && args[0] == "-resend")
+			{
+				// TODO: make async
+				Listener.TryResendFailed();
+			}
 
 			Console.WriteLine("Service started; awaiting items from queue...");
 			new AutoResetEvent(false).WaitOne();
