@@ -1,4 +1,4 @@
-﻿using Email.Shared.DTO;
+using Email.Shared.DTO;
 using System;
 using System.Net;
 using System.Net.Mail;
@@ -15,7 +15,7 @@ namespace Email.Sender
 			_emailSettings = emailSettings;
 		}
 
-		internal static async Task<bool> Send(EmailDto request)
+		internal static async Task<bool> SendAsync(EmailDto request)
 		{
 			using (var smtp = new SmtpClient(_emailSettings.Host, _emailSettings.Port))
 			{

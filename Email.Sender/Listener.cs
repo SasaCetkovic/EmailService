@@ -99,7 +99,7 @@ namespace Email.Sender
 
 				if (!await Repository.EmailSentAsync(message.Id))
 				{
-					success = await EmailSender.Send(message);
+					success = await EmailSender.SendAsync(message);
 				}
 
 				if (success)
