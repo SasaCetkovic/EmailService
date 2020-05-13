@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Email.Api.Models;
 using Email.Api.Services;
 using System.Threading.Tasks;
 
-namespace Email.Api.Controlles
+namespace Email.Api.Controllers
 {
 	[Produces("application/json")]
     [Route("api/email/status")]

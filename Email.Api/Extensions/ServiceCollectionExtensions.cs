@@ -1,10 +1,10 @@
-﻿using Bazinga.AspNetCore.Authentication.Basic;
+using Bazinga.AspNetCore.Authentication.Basic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.PlatformAbstractions;
 using Email.Api.Services;
-using Swashbuckle.AspNetCore.Swagger;
 using System.IO;
+using Microsoft.OpenApi.Models;
 
 namespace Email.Api.Extensions
 {
@@ -14,7 +14,7 @@ namespace Email.Api.Extensions
 		{
 			services.AddSwaggerGen(c =>
 			{
-				c.SwaggerDoc("v1", new Info { Title = configuration.GetValue<string>("Swagger:Title"), Version = "v1" });
+				c.SwaggerDoc("v1", new OpenApiInfo { Title = configuration.GetValue<string>("Swagger:Title"), Version = "v1" });
 				var basePath = PlatformServices.Default.Application.ApplicationBasePath;
 				var xmlPath = Path.Combine(basePath, configuration.GetValue<string>("Swagger:XmlDocFileName"));
 				c.IncludeXmlComments(xmlPath);

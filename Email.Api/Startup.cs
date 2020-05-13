@@ -1,14 +1,16 @@
-﻿using Bazinga.AspNetCore.Authentication.Basic;
+using Bazinga.AspNetCore.Authentication.Basic;
+using Email.Api.Extensions;
+using Email.Api.Services;
+using Email.Shared.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Email.Api.Extensions;
-using Email.Api.Services;
-using Email.Shared.Data;
+using Newtonsoft.Json.Serialization;
 using System;
 
 namespace Email.Api
@@ -16,17 +18,13 @@ namespace Email.Api
 	public class Startup
     {
 		private readonly IConfiguration _configuration;
-		private readonly IHostingEnvironment _env;
 
-		public Startup(IConfiguration configuration, IHostingEnvironment env)
+		public Startup(IConfiguration configuration)
 		{
 			_configuration = configuration;
-			_env = env;
 		}
 
-
 		// This method gets called by the runtime. Use this method to add services to the container.
-		// For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
 		public void ConfigureServices(IServiceCollection services)
         {
 			var builder = services.AddMvcCore();
@@ -34,10 +32,10 @@ namespace Email.Api
 			builder.AddApiExplorer();
 			builder.AddDataAnnotations();
 			builder.AddFormatterMappings();
-			builder.AddJsonFormatters();
-			builder.AddJsonOptions(
+			builder.AddNewtonsoftJson(
 				options =>
 				{
+					options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 					options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
 					options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
 					options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
@@ -48,18 +46,17 @@ namespace Email.Api
 
 			// Basic auth
 			services.AddAuthentication(BasicAuthenticationDefaults.AuthenticationScheme)
-				    .AddBasicAuthentication<AuthService>();
+					.AddBasicAuthentication<AuthService>();
 
 			services.AddDbContext<EmailDbContext>(opt => opt.UseSqlServer(_configuration.GetConnectionString("DefaultConnection")));
 
 			services.ConfigureCustomDependencies();
 		}
 
-
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-		public void Configure(IApplicationBuilder app, IServiceProvider serviceProvider)
+		public void Configure(IApplicationBuilder app, IServiceProvider serviceProvider, IWebHostEnvironment env)
         {
-			if (_env.IsDevelopment())
+			if (env.IsDevelopment())
 			{
 				var dbContext = serviceProvider.GetService<EmailDbContext>();
 				dbContext.Database.EnsureCreated();
@@ -69,12 +66,16 @@ namespace Email.Api
 			app.UseSwagger();
 			app.UseSwaggerUiCustomSettings(_configuration);
 
+            app.UseRouting();
 			app.UseCors("AllowAll");
 			app.UseAuthentication();
+			app.UseAuthorization();
 
-			app.UseMvc();
+			app.UseEndpoints(endpoints =>
+			{
+				endpoints.MapControllers();
+			});
 		}
-
 
 		private void SetupCors(CorsOptions options)
 		{
